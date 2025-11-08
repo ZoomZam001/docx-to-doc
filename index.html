@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DOCX → DOC Converter</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      text-align: center;
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 90%;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    input, button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 1em;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #downloadLink {
+      display: none;
+      margin-top: 20px;
+      text-decoration: none;
+      color: white;
+      background: #28a745;
+      padding: 10px 15px;
+      border-radius: 6px;
+    }
+
+    #downloadLink:hover {
+      background: #1e7e34;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>DOCX → DOC Converter</h1>
+    <p>Upload a .docx file and download it as a .doc file.</p>
+
+    <input type="file" id="fileInput" accept=".docx">
+    <br>
+    <button id="convertBtn">Convert</button>
+    <br>
+    <a id="downloadLink">Download .doc</a>
+  </div>
+
+  <!-- Mammoth.js from CDN -->
+  <script src="https://unpkg.com/mammoth@1.6.0/mammoth.browser.min.js"></script>
+  <script>
+    document.getElementById("convertBtn").addEventListener("click", async () => {
+      const fileInput = document.getElementById("fileInput");
+      const downloadLink = document.getElementById("downloadLink");
+
+      if (!fileInput.files.length) {
+        alert("Please select a .docx file first.");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const arrayBuffer = await file.arrayBuffer();
+
+      // Convert DOCX → HTML
+      mammoth.convertToHtml({ arrayBuffer })
+        .then(result => {
+          const html = result.value;
+
+          // Convert HTML text into a simple RTF (readable by MS Word)
+          const rtfHeader = "{\\rtf1\\ansi\\deff0\n";
+          const rtfBody = html
+            .replace(/<[^>]+>/g, '') // strip HTML tags
+            .replace(/\n/g, "\\par\n")
+            .replace(/&nbsp;/g, " ");
+          const rtf = rtfHeader + rtfBody + "\n}";
+
+          // Create .doc file
+          const blob = new Blob([rtf], { type: "application/msword" });
+          const url = URL.createObjectURL(blob);
+
+          // Prepare download link
+          downloadLink.href = url;
+          downloadLink.download = file.name.replace(/\.docx$/i, "") + ".doc";
+          downloadLink.style.display = "inline-block";
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Error converting file. Please make sure it's a valid .docx file.");
+        });
+    });
+  </script>
+</body>
+</html>
